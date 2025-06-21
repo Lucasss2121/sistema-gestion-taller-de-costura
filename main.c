@@ -86,7 +86,7 @@ int main() {
                 modificarEstadoPedido(archivo);
 				break;
             case 6:
-				//calcularGananciasTotales();
+				calcularGananciasTotales(archivo);
 				break;
 			case 0:
 				printf("Saliendo del programa...\n");
@@ -362,4 +362,45 @@ void modificarEstadoPedido(FILE *clientes) {
 
     remove("clientes.bin");
 	rename("temp.bin", "clientes.bin");
+}
+
+void calcularGananciasTotales(FILE *clientes) {
+    struct cliente clienteTemp;
+    struct pedido *pedidos;
+    int totalPedidos = 0,i;
+    float totalGanancias = 0.0f;
+
+    clientes = fopen("clientes.bin", "rb");
+    if (clientes == NULL) {
+        perror("No se pudo abrir el archivo de clientes.");
+        return;
+    }
+
+    while (fread(&clienteTemp, sizeof(struct cliente), 1, clientes) == 1) {
+        if (clienteTemp.cantPedidos > 0) {// Si tenemos por lo menos un pedido, reservo memoria en pedidos
+           
+            pedidos = malloc(sizeof(struct pedido) * clienteTemp.cantPedidos);
+            if (pedidos == NULL) {
+                perror("Error al reservar memoria para pedidos.");
+                fclose(clientes);
+                return;
+            }
+
+        	fread(pedidos, sizeof(struct pedido), clienteTemp.cantPedidos, clientes);    // Leo los pedidos
+
+         
+            for (i = 0; i < clienteTemp.cantPedidos; i++) {   // Cuento los pedidos y sumo el precio 
+                totalPedidos++;
+                totalGanancias = totalGanancias + pedidos[i].precio;
+            }
+
+            free(pedidos); //livero memoria 
+        }
+    }
+
+    fclose(clientes); // Cirro archivo
+
+	printf("Resumen de Pedidos\n");
+    printf("Cantidad total de pedidos: %d\n", totalPedidos);
+    printf("Ganancia total acumulada: $%.2f\n", totalGanancias);
 }
