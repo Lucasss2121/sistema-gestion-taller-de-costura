@@ -80,7 +80,7 @@ int main() {
 				buscarCliente(archivo);
 				break;
             case 4:
-				//mostrarClientes();
+				mostrarClientes(archivo);
 				break;
 			case 5:
 				//calcularGananciasTotales();
@@ -198,17 +198,84 @@ int ingresarDni() { //Apunte flisol uso de scanf ingreso dni como char para vali
     char dni[16];
     while (getchar() != '\n'); //Limpio el bufer
 
-        while (1) {// Bucle infinito
-                printf("Ingrese DNI del cliente a buscar: ");
+    while (1) {// Bucle infinito
+        printf("Ingrese DNI del cliente a buscar: ");
 
-                if (fgets(dni, sizeof(dni), stdin)){// Leo la linea del completa
+        if (fgets(dni, sizeof(dni), stdin)) { // Leo la linea del completa
+            dni[strcspn(dni, "\n")] = '\0'; // Quitar salto de linea
+        }
 
-                    dni[strcspn(dni, "\n")] = '\0'; // Quitar salto de l�nea
+        if (strlen(dni) == 8 && strspn(dni, "0123456789") == 8) { // Verifico que los dijitos ingresados sean numeros
+        return atoi(dni); //La funcion atoi() lee la representacion de un numero entero de una cadena y devuelve su valor
+        } else{
+            printf("DNI invalido. Intente de nuevo.\n");
+        }
+    }
+}
 
-                if (strlen(dni) == 8 && strspn(dni, "0123456789") == 8) // Verifico que los dijitos ingresados sean numeros
+void mostrarCliente(FILE *clientes) {
+	struct cliente clientesTemp;
+    struct pedido *pedidos;
+    int selecion = 3; // Seleccion del usuario
+    int encontrado = 0; //Bandera de clientes 
 
-                    return atoi(dni);//La funci�n atoi() lee la representaci�n de un n�mero entero de una cadena y devuelve su valor
-                }
-                    printf("DNI invalido. Intente de nuevo.\n");
-                }
+    clientes = fopen("clientes.bin", "rb"); //Abro archivo binario para leer
+    if (clientes == NULL) {
+        perror("No se pudo abrir el archivo de clientes.");
+        return;
+    }
+
+    FILE *txt = fopen("ListadoDeClientes.txt", "w"); // Creo un .txt para generar la lista de clientes
+    if (txt == NULL) {
+        perror("No se pudo crear el archivo de texto.");
+        fclose(clientes);
+        return;
+    }
+
+    printf("Desea ver la lista de clientes y crear su txt\n"); //Pregunto al usuario si desea ver lista de clientes, guardo en seleccion
+	printf("1.Si\n");
+	printf("0.No\n");
+    scanf("%d", &selecion);
+
+    if (selecion = 1) {
+        printf("Mostrando clientes y creando el txt...");
+    } else if (selecion = 0) {
+        printf("Mostrando clientes...");
+    }
+
+    while (fread(&clientesTemp, sizeof(struct cliente), 1, clientes) == 1) {
+       // Imprimo por consola datos del cliente de a uno
+        if (selecion == 1) {
+            printf("\n--------------------------\n");
+            printf("Nombre y Apellido: %s\n", clientesTemp.nombreApellido);
+            printf("DNI: %d\n", clientesTemp.dni);
+            printf("Domicilio: %s %d\n", clientesTemp.calle, clientesTemp.altura);
+            printf("Cantidad de pedidos: %d\n", clientesTemp.cantPedidos);
+        }
+
+        // Imprimo en el archivo .txt la lista
+        fprintf(txt, "--------------------------\n");
+        fprintf(txt, "Nombre y Apellido: %s\n", clientesTemp.nombreApellido);
+        fprintf(txt, "DNI: %d\n", clientesTemp.dni);
+        fprintf(txt, "Domicilio: %s %d\n", clientesTemp.calle, clientesTemp.altura);
+        fprintf(txt, "Cantidad de pedidos: %d\n", clientesTemp.cantPedidos);
+
+        // Se saltan los pedidos, de lo contrario crea la lista con datos erroneos 
+        if (clientesTemp.cantPedidos > 0) {
+            pedidos = malloc(sizeof(struct pedido) * clientesTemp.cantPedidos);
+            fread(pedidos, sizeof(struct pedido), clientesTemp.cantPedidos, clientes);
+            free(pedidos); // No los usamos, solo los saltamos
+        }
+
+        encontrado = 1; //Bandera de clientes 
+    }
+
+    if (encontrado == 0) { //Si no hay clientes la bandera sigue en 0
+        printf("No se encontraron clientes.\n");
+    } else {
+        printf("Archivo \"listadoDeClientes.txt\" generado con exito.\n");
+    }
+
+    fclose(txt);
+    fclose(clientes);
 }
