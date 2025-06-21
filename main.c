@@ -83,10 +83,10 @@ int main() {
 				mostrarClientes(archivo);
 				break;
 			case 5:
-				//calcularGananciasTotales();
+                modificarEstadoPedido(archivo);
 				break;
-			case 6:
-				//modificarEstadoPedido();
+            case 6:
+				//calcularGananciasTotales();
 				break;
 			case 0:
 				printf("Saliendo del programa...\n");
@@ -278,4 +278,88 @@ void mostrarCliente(FILE *clientes) {
 
     fclose(txt);
     fclose(clientes);
+}
+
+void modificarEstadoPedido(FILE *clientes) {
+    FILE *temp = NULL;
+	struct cliente clienteTemp;
+	struct pedido *pedidoTemp;
+	int clienteModificar = 0;
+    int idCambiar;
+    char estadoCambiado[10];
+	int i = 0;
+    int opcion = 0;
+    char *proceso = "proceso";
+    char *listo = "listo";
+    char *entregado = "entregado";
+
+
+	temp = fopen("temp.bin", "wb");
+	if(temp == NULL) {
+		perror("Error al abrir el archivo temp.bin\n");
+	}
+
+	clientes = fopen("clientes.bin", "rb");
+	if(clientes == NULL) {
+		perror("Error al abrir el archivo temp.bin\n");
+	}
+
+	printf("\n Ingrese el DNI del cliente a modificar: \n");
+    printf("DNI ingresado: ");
+	scanf("%d", &clienteModificar);
+
+	while (fread(&clienteTemp, sizeof(struct cliente), 1, clientes) == 1) {
+		pedidoTemp = malloc(sizeof(struct pedido) * clienteTemp.cantPedidos);
+		fread(pedidoTemp, sizeof(struct pedido), clienteTemp.cantPedidos, clientes);
+		
+		if (clienteTemp.dni != clienteModificar) {
+			fwrite(&clienteTemp, sizeof(struct cliente), 1, temp);
+			fwrite(pedidoTemp, sizeof(struct pedido), clienteTemp.cantPedidos, temp);
+
+		} else {
+
+            printf("\n Ingrese el ID del pedido al que quiere modificar el estado: \n");
+            printf("ID ingresado: ");
+            scanf("%d", &idCambiar);
+            
+            for(i = 0; i < clienteTemp.cantPedidos; i++) {
+                if(pedidoTemp[i].idPedido == idCambiar) {
+
+                    printf("\n Ingrese el estado del pedido al que quiere cambiar: \n");
+                    printf("1. En proceso\n");
+                    printf("2. Listo\n");
+                    printf("3. Entregado\n");
+                    printf("Opcion ingresada: ");
+                    scanf("%d", &opcion);
+
+                    switch (opcion) {
+                        case 1:
+                            strcpy(pedidoTemp[i].estado, proceso);
+                            break;
+                        case 2:
+                            strcpy(pedidoTemp[i].estado, listo);
+                            break;
+                        case 3:
+                            strcpy(pedidoTemp[i].estado, entregado);
+                            break;
+                        default:
+                            printf("Opcion no valida\n");
+                    }
+
+                    printf("\n Modificacion completada con exito\n");
+                }
+            }
+            
+            fwrite(&clienteTemp, sizeof(struct cliente), 1, temp);
+            fwrite(pedidoTemp, sizeof(struct pedido), clienteTemp.cantPedidos, temp);
+		}
+
+		free(pedidoTemp);
+	}
+
+	fclose(temp);
+	fclose(clientes);
+
+    remove("clientes.bin");
+	rename("temp.bin", "clientes.bin");
 }
