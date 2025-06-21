@@ -5,8 +5,10 @@
 void procesarClientesYPedidos();
 void eliminarCliente(FILE *clientes);
 void buscarCliente(FILE *clientes);
-void calcularGananciasTotales(FILE *clientes);
+int ingresarDni();
+void mostrarCliente(FILE *clientes);
 void modificarEstadoPedido(FILE *clientes);
+void calcularGananciasTotales(FILE *clientes);
 
 struct cliente {
 	char nombreApellido[50];
@@ -61,8 +63,8 @@ int main() {
 		printf("2. Eliminar cliente\n");
 		printf("3. Buscar cliente\n");
         printf("4. Mostrar clientes y crear txt\n");
-		printf("5. Calcular Ganancias totales\n");
-		printf("6. Modificar estado de un pedido\n");
+		printf("5. Modificar estado de un pedido\n");
+		printf("6. Calcular Ganancias totales\n");
 		printf("0. Salir\n");
 		printf("Opcion seleccionada: ");
 		scanf("%d", &opcion);
@@ -75,12 +77,15 @@ int main() {
 				eliminarCliente(archivo);
 				break;
 			case 3:
-				//buscarCliente();
+				buscarCliente(archivo);
 				break;
-			case 4:
-				//calcularGananciasTotales();
+            case 4:
+				//mostrarClientes();
 				break;
 			case 5:
+				//calcularGananciasTotales();
+				break;
+			case 6:
 				//modificarEstadoPedido();
 				break;
 			case 0:
@@ -134,4 +139,76 @@ void eliminarCliente(FILE *clientes) {
 
 	remove("clientes.bin");
 	rename("temp.bin", "clientes.bin");
+}
+
+void buscarCliente(FILE *clientes) {
+	int dniBuscado;
+	struct cliente clienteTemp;
+	struct pedido *pedidos;
+	int i,e;
+	char nombreArchivo[30];
+    int banderaEncontrado = 0; //Bandera de validacion de cliente encontrado
+
+	clientes = fopen("clientes.bin", "rb");
+	if (clientes == NULL) {
+		perror("No se pudo abrir el archivo de clientes.");
+		return;
+	}
+
+	dniBuscado = ingresarDni(); //Valido que el DNI tenga 8 dijitos numericos
+
+	while (fread(&clienteTemp, sizeof(struct cliente), 1, clientes) == 1) {
+		pedidos = malloc(sizeof(struct pedido) * clienteTemp.cantPedidos);
+		fread(pedidos, sizeof(struct pedido), clienteTemp.cantPedidos, clientes);
+
+
+        if (clienteTemp.dni == dniBuscado) {// Si el DNI es valido y corresponde a un DNI de un cliente Asigno la bandera
+            banderaEncontrado = 1;
+
+
+			printf("\nCliente encontrado:\n");
+			printf("Nombre y Apellido: %s\n", clienteTemp.nombreApellido);
+			printf("DNI: %d\n", clienteTemp.dni);
+			printf("Domicilio: %s %d\n", clienteTemp.calle, clienteTemp.altura);
+			printf("Cantidad de pedidos: %d\n", clienteTemp.cantPedidos);
+
+			for (i = 0; i < clienteTemp.cantPedidos; i++) {
+				printf("\nPedido #%d:\n", i + 1);
+				printf("  Prenda: %s\n", pedidos[i].prenda);
+				printf("  Talle: %s\n", pedidos[i].talle);
+				printf("  ID: %d\n", pedidos[i].idPedido);
+				printf("  Precio: %.2f\n", pedidos[i].precio);
+				printf("  Estado: %s\n", pedidos[i].estado);
+			}
+
+			free(pedidos);
+		}
+        
+		free(pedidos);
+
+	    if (!banderaEncontrado) {
+            printf("\nEl cliente DNI %d no encontrado\n", dniBuscado);
+        }
+    }
+
+	fclose(clientes);
+}
+
+int ingresarDni() { //Apunte flisol uso de scanf ingreso dni como char para validar la cantidad de caracteres y despues lo convierto en entero
+    char dni[16];
+    while (getchar() != '\n'); //Limpio el bufer
+
+        while (1) {// Bucle infinito
+                printf("Ingrese DNI del cliente a buscar: ");
+
+                if (fgets(dni, sizeof(dni), stdin)){// Leo la linea del completa
+
+                    dni[strcspn(dni, "\n")] = '\0'; // Quitar salto de l�nea
+
+                if (strlen(dni) == 8 && strspn(dni, "0123456789") == 8) // Verifico que los dijitos ingresados sean numeros
+
+                    return atoi(dni);//La funci�n atoi() lee la representaci�n de un n�mero entero de una cadena y devuelve su valor
+                }
+                    printf("DNI invalido. Intente de nuevo.\n");
+                }
 }
